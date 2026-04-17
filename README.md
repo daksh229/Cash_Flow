@@ -1,61 +1,91 @@
-# Cash Flow Forecasting Model
+# Cash Flow Forecasting Platform
 
-A comprehensive cash flow forecasting platform with ML prediction models, rule-based forecasting engines, and a recommendation engine for treasury decision-making.
+An enterprise-grade **cash flow forecasting and treasury intelligence platform** that combines machine learning, deterministic forecasting, and a recommendation engine to deliver accurate cash visibility and actionable financial insights.
 
-Built from the **CashFlow Solution Design Document (SDD v17)**.
+Built based on **Cash Flow Solution Design Document (SDD v17)**.
 
-## Overview
+---
 
-The system predicts and forecasts cash inflows and outflows across 9 modules, aggregates them into a unified daily cash position, and generates actionable recommendations.
+## 🚀 Overview
 
-### Module Architecture
+This platform forecasts **cash inflows and outflows across 9 modules**, consolidates them into a **unified cash position**, and generates **data-driven treasury recommendations**.
 
-| Module | Type | Method | Purpose |
-|--------|------|--------|---------|
-| **S1** | Prediction (ML) | LightGBM + RF | Predict days_to_pay for AR invoices |
-| **S2** | Prediction (ML) | LightGBM + RF | Predict payment timing for AP bills |
-| **Credit Risk** | Classification (ML) | LightGBM + RF | Classify customers: LOW/MEDIUM/HIGH risk |
-| **S3** | Forecast (Rule) | Deterministic | WIP/project milestone billing forecast |
-| **S4** | Forecast (Rule) | Cohort matching | Sales pipeline cash forecast |
-| **S5** | Forecast (Rule) | Scheduling | Contingent inflows (loans, grants, refunds) |
-| **S6** | Forecast (Rule) | Category-based | Expense forecast (salary, tax, renewals) |
-| **S7** | Aggregation | 9-step pipeline | Unified cash position with dedup |
-| **RE** | Recommendation | Scoring + ranking | Actionable treasury recommendations |
+It is designed for:
+- Finance teams
+- Treasury analysts
+- CFO decision support systems
 
-### Data Flow
+---
 
-```
-Raw Data (8 tables)
-    |
-    v
-Feature Table (shared, computed once)
-    |
-    +---> S1 AR Prediction ----+
-    +---> S2 AP Prediction ----+
-    +---> Credit Risk ----------+
-    +---> S3 WIP Forecast ------+---> S7 Cash Aggregation ---> Recommendation Engine
-    +---> S4 Pipeline Forecast -+         |
-    +---> S5 Contingent Inflows +         v
-    +---> S6 Expense Forecast --+    Daily/Weekly/Monthly
-                                     Cash Position
-```
+## 🧩 System Architecture
 
-## Quick Start
+### Module Breakdown
 
-### 1. Setup
+| Module | Category | Technique | Description |
+|--------|----------|----------|-------------|
+| **S1** | ML Prediction | LightGBM + Random Forest | Predict AR invoice payment timelines |
+| **S2** | ML Prediction | LightGBM + Random Forest | Predict AP bill payment adjustments |
+| **Credit Risk** | ML Classification | LightGBM + RF | Customer risk segmentation |
+| **S3** | Rule-Based | Deterministic | WIP / milestone billing forecasts |
+| **S4** | Rule-Based | Cohort Matching | Sales pipeline cash projections |
+| **S5** | Rule-Based | Scheduling | Contingent inflows (loans, refunds) |
+| **S6** | Rule-Based | Category Logic | Expense forecasting |
+| **S7** | Aggregation | Multi-step Pipeline | Unified cash position engine |
+| **RE** | Intelligence | Scoring + Ranking | Treasury recommendations |
+
+---
+
+## 🔄 Data Flow Architecture
+
+```mermaid
+flowchart TD
+    A[Raw Data Sources] --> B[Feature Store]
+
+    B --> S1[AR Prediction]
+    B --> S2[AP Prediction]
+    B --> CR[Credit Risk]
+    B --> S3[WIP Forecast]
+    B --> S4[Pipeline Forecast]
+    B --> S5[Contingent Inflows]
+    B --> S6[Expense Forecast]
+
+    S1 --> S7[Cash Aggregation]
+    S2 --> S7
+    CR --> S7
+    S3 --> S7
+    S4 --> S7
+    S5 --> S7
+    S6 --> S7
+
+    S7 --> RE[Recommendation Engine]
+    RE --> OUT[Cash Insights & Decisions]
+````
+
+---
+
+## ⚡ Quick Start
+
+### 1. Environment Setup
 
 ```bash
-# Clone and enter project
+# Clone repository
 cd Project-1
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate        # Linux/Mac
-venv\Scripts\activate           # Windows
+
+# Activate environment
+# Linux/Mac
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+---
 
 ### 2. Run Full Pipeline
 
@@ -63,155 +93,209 @@ pip install -r requirements.txt
 python main.py
 ```
 
-This runs: Feature Table Generation --> S1 --> S2 --> Credit Risk --> S3 --> S4 --> S5 --> S6 --> S7 --> Recommendation Engine
+**Execution Flow:**
+
+```
+Feature Engineering → S1 → S2 → Credit Risk → S3 → S4 → S5 → S6 → S7 → Recommendations
+```
+
+---
 
 ### 3. Run Individual Modules
 
 ```bash
-# Feature tables (required first)
+# Feature Engineering
 python pipeline/run_feature_table.py
 
-# Prediction models
+# ML Models
 python pipeline/run_s1_ar_prediction.py
 python pipeline/run_s2_ap_prediction.py
 python pipeline/run_credit_risk.py
 
-# Forecast models
+# Forecast Engines
 python pipeline/run_s3_wip_forecast.py
 python pipeline/run_s4_pipeline_forecast.py
 python pipeline/run_s5_contingent_inflows.py
 python pipeline/run_s6_expense_forecast.py
 
-# Aggregation + recommendations
+# Aggregation & Intelligence
 python pipeline/run_s7_cash_aggregation.py
 python pipeline/run_recommendation_engine.py
 ```
 
-### 4. Web Application
+---
+
+### 4. Launch Application
+
+#### Backend (FastAPI)
 
 ```bash
-# Terminal 1: FastAPI backend
 python app/api.py
-# API runs on http://localhost:8000
-# Swagger docs at http://localhost:8000/docs
-
-# Terminal 2: Streamlit frontend
-streamlit run app/frontend.py
-# UI runs on http://localhost:8501
 ```
+
+* API Base URL: `http://localhost:8000`
+* Swagger Docs: `http://localhost:8000/docs`
+
+#### Frontend (Streamlit)
+
+```bash
+streamlit run app/frontend.py
+```
+
+* UI: `http://localhost:8501`
+
+---
 
 ### 5. MLflow Tracking
 
 ```bash
 mlflow ui --backend-store-uri mlruns
-# Dashboard at http://localhost:5000
 ```
 
-## Configuration
+* Dashboard: `http://localhost:5000`
 
-All model parameters are config-driven via YAML files:
+---
 
-- **`config.yml`** - Master config: which models to run, global settings, MLflow
-- **`config/s1_ar_prediction.yml`** - S1 hyperparams, features, encoding, eval metrics
-- **`config/s2_ap_prediction.yml`** - S2 hyperparams, thin-data threshold
-- **`config/credit_risk.yml`** - Classification settings, class imbalance handling
-- **`config/s3_wip_forecast.yml`** - Milestone rules, completion threshold, invoice lag
-- **`config/s4_pipeline_forecast.yml`** - Stage probabilities, cohort matching
-- **`config/s5_contingent_inflows.yml`** - Confidence mapping by approval status
-- **`config/s6_expense_forecast.yml`** - Confidence mapping by expense category
-- **`config/s7_cash_aggregation.yml`** - Source trust hierarchy, dedup rules, opening balance
-- **`config/recommendation_engine.yml`** - Scoring weights, lever configs, constraints
+## ⚙️ Configuration Management
 
-To change hyperparameters, edit the YAML - no code changes needed.
+The system is fully **config-driven** using YAML files.
 
-## API Endpoints
+### Core Configuration Files
 
-### Prediction Models (Dual Mode: Lookup + New Entry)
+| File                               | Purpose                            |
+| ---------------------------------- | ---------------------------------- |
+| `config.yml`                       | Global settings & pipeline control |
+| `config/s1_ar_prediction.yml`      | AR model configuration             |
+| `config/s2_ap_prediction.yml`      | AP model configuration             |
+| `config/credit_risk.yml`           | Risk classification setup          |
+| `config/s3_wip_forecast.yml`       | WIP forecasting rules              |
+| `config/s4_pipeline_forecast.yml`  | Pipeline probability logic         |
+| `config/s5_contingent_inflows.yml` | Inflow confidence mapping          |
+| `config/s6_expense_forecast.yml`   | Expense modeling                   |
+| `config/s7_cash_aggregation.yml`   | Aggregation logic                  |
+| `config/recommendation_engine.yml` | Recommendation scoring             |
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/predict/s1/{invoice_id}` | GET | Predict days_to_pay for existing invoice |
-| `/predict/s1/new` | POST | Predict for new invoice (raw inputs) |
-| `/predict/s2/{bill_id}` | GET | Predict adjustment_delta for existing bill |
-| `/predict/s2/new` | POST | Predict for new bill |
-| `/predict/credit_risk/{customer_id}` | GET | Classify existing customer risk |
-| `/predict/credit_risk/new` | POST | Classify new customer |
+> ✅ No code changes required for tuning — update YAML configs only.
 
-### Forecast Models
+---
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/forecast/s3/{project_id}` | GET | S3 WIP forecast for a project |
-| `/forecast/s4/{opportunity_id}` | GET | S4 pipeline forecast for a deal |
-| `/forecast/s5/records` | GET | All S5 contingent inflow records |
-| `/forecast/s6/records` | GET | All S6 expense records |
-| `/forecast/s7/daily` | GET | S7 daily cash position |
-| `/forecast/s7/weekly` | GET | S7 weekly aggregation |
-| `/forecast/s7/monthly` | GET | S7 monthly aggregation |
+## 🔌 API Reference
 
-### Recommendations & Utilities
+### Prediction APIs
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/recommendations` | GET | All ranked recommendations |
-| `/recommendations/summary` | GET | Summary by lever and priority |
-| `/lookup/invoices\|bills\|customers\|projects\|deals` | GET | List available IDs |
-| `/health` | GET | API health + loaded models |
-| `/metrics/{model_key}` | GET | Evaluation metrics for a model |
+| Endpoint                             | Method | Description              |
+| ------------------------------------ | ------ | ------------------------ |
+| `/predict/s1/{invoice_id}`           | GET    | AR payment prediction    |
+| `/predict/s1/new`                    | POST   | New AR prediction        |
+| `/predict/s2/{bill_id}`              | GET    | AP adjustment prediction |
+| `/predict/s2/new`                    | POST   | New AP prediction        |
+| `/predict/credit_risk/{customer_id}` | GET    | Risk classification      |
+| `/predict/credit_risk/new`           | POST   | New customer risk        |
 
-## Central Financial Intelligence Layer
+---
 
-The system is built around a shared **Feature Store** with 6 tables:
+### Forecast APIs
 
-| Table | Entity | Updated | Consumed By |
-|-------|--------|---------|-------------|
-| `customer_features` | Customer | Nightly + Event | S1, S3, S4, RE, Credit Risk |
-| `customer_payment_scores` | Customer | Nightly | S1, S4, RE, Credit Risk |
-| `invoice_features` | Transaction | Daily + Event | S1, RE |
-| `collections_features` | Transaction | Event | S1, RE |
-| `vendor_features` | Vendor | Nightly + Event | S2, RE |
-| `bill_features` | Transaction | Daily + Event | S2 |
+| Endpoint                        | Method | Description         |
+| ------------------------------- | ------ | ------------------- |
+| `/forecast/s3/{project_id}`     | GET    | WIP forecast        |
+| `/forecast/s4/{opportunity_id}` | GET    | Pipeline forecast   |
+| `/forecast/s5/records`          | GET    | Contingent inflows  |
+| `/forecast/s6/records`          | GET    | Expense forecasts   |
+| `/forecast/s7/daily`            | GET    | Daily cash position |
+| `/forecast/s7/weekly`           | GET    | Weekly aggregation  |
+| `/forecast/s7/monthly`          | GET    | Monthly aggregation |
 
-All models read from this shared store. No module computes features independently.
+---
 
-## Output Tables
+### Recommendation APIs
 
-Two standardised output schemas (from the SDD):
+| Endpoint                   | Method | Description              |
+| -------------------------- | ------ | ------------------------ |
+| `/recommendations`         | GET    | Ranked actions           |
+| `/recommendations/summary` | GET    | Aggregated insights      |
+| `/health`                  | GET    | System health check      |
+| `/metrics/{model_key}`     | GET    | Model evaluation metrics |
 
-### payment_predictions (S1, S2)
+---
+
+## 🧠 Feature Store (Core Intelligence Layer)
+
+A centralized feature store ensures **consistency, reusability, and scalability**.
+
+| Table                     | Entity       | Update Frequency | Consumers      |
+| ------------------------- | ------------ | ---------------- | -------------- |
+| `customer_features`       | Customer     | Batch + Event    | S1, S3, S4, RE |
+| `customer_payment_scores` | Customer     | Daily            | S1, S4, RE     |
+| `invoice_features`        | Transactions | Daily            | S1             |
+| `collections_features`    | Transactions | Real-time        | S1             |
+| `vendor_features`         | Vendor       | Batch            | S2             |
+| `bill_features`           | Transactions | Daily            | S2             |
+
+---
+
+## 📊 Output Schemas
+
+### Payment Predictions
+
 ```
-transaction_id, transaction_type (AR/AP), predicted_payment_date,
-baseline_predicted_date, prob_pay_0_30, prob_pay_30_60, prob_pay_60_plus,
-expected_payment_amount, trigger_event, confidence_tier, prediction_date, model_version
+transaction_id, transaction_type, predicted_payment_date,
+probability_buckets, expected_amount, confidence_tier, model_version
 ```
 
-### forecast_outputs (S1-S7)
+---
+
+### Forecast Outputs
+
 ```
-forecast_id, forecast_date, forecast_type (AR/AP/WIP/PIPELINE/INFLOW/EXPENSE/CASH),
-target_date, forecast_amount, confidence_low, confidence_high,
-source_module (S1-S7), forecast_run_id
+forecast_id, forecast_type, target_date,
+forecast_amount, confidence_range,
+source_module, run_id
 ```
 
-## Design Principles
+---
 
-- **Deterministic first** - Phase 1 prioritises auditability; ML is additive
-- **Config-driven** - All parameters in YAML; no hardcoded values
-- **Single source of truth** - S7 is the only view downstream consumers read
-- **Non-destructive** - Suppressed events retained with reason codes
-- **Shared Feature Store** - All models consume the same versioned features
-- **Explainable** - Every recommendation states what, why, entity, and cash impact
+## 🎯 Design Principles
 
-## Tech Stack
+* **Deterministic-first architecture**
+* **Fully config-driven system**
+* **Single source of truth (S7 layer)**
+* **Auditability and traceability**
+* **Shared feature store across models**
+* **Explainable AI outputs**
 
-- **ML**: LightGBM, scikit-learn (Random Forest)
-- **Tracking**: MLflow
-- **Backend**: FastAPI + Uvicorn
-- **Frontend**: Streamlit
-- **Config**: YAML (PyYAML)
-- **Data**: pandas, numpy
+---
 
-## Document Reference
+## 🛠 Tech Stack
 
-- **SDD**: `CashFlow_SDD_v17-20032026.docx` - Full solution design
-- **Schema**: `Model_InputOutput_Mapping.md` - Input/output field-level mappings
-- **Structure**: `STRUCTURE.md` - Complete file tree with descriptions
+* **Machine Learning**: LightGBM, Scikit-learn
+* **Backend**: FastAPI
+* **Frontend**: Streamlit
+* **Experiment Tracking**: MLflow
+* **Data Processing**: Pandas, NumPy
+* **Configuration**: YAML
+
+---
+
+## 📚 Documentation
+
+| Document                       | Description        |
+| ------------------------------ | ------------------ |
+| `CashFlow_SDD_v17.docx`        | Full system design |
+| `Model_InputOutput_Mapping.md` | Schema mapping     |
+| `STRUCTURE.md`                 | Project structure  |
+
+---
+
+## ✅ Summary
+
+This platform provides:
+
+* End-to-end **cash flow visibility**
+* Hybrid **ML + rule-based forecasting**
+* Real-time **decision intelligence**
+* Scalable, modular architecture for enterprise use
+
+---
+
+```
