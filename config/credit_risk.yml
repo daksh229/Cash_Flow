@@ -1,0 +1,120 @@
+# ===========================================================================
+# Credit Risk Assessment Configuration
+# ===========================================================================
+
+# ---- Model Info -------------------------------------------------------------
+model_info:
+  name: Credit_Risk_Assessment
+  type: classification             # classification (multiclass)
+  target: risk_segment
+  description: "Classify customers into LOW / MEDIUM / HIGH risk segments"
+
+# ---- Feature Tables to Load ------------------------------------------------
+feature_tables:
+  - customer_features
+
+# ---- Feature Columns -------------------------------------------------------
+features:
+  customer_behaviour:
+    - avg_payment_delay
+    - median_payment_delay
+    - late_payment_ratio
+    - payment_volatility
+    - dispute_ratio
+    - ptp_kept_ratio
+    - recent_reminder_velocity
+    - open_dispute_count
+    - days_since_last_payment
+    - payment_trend_30d
+    - days_sales_outstanding
+    - seasonality_index
+    - avg_invoice_amount
+    - invoice_count
+    - non_invoice_payment_count
+    - advance_payment_ratio
+
+# ---- Target Variable -------------------------------------------------------
+target:
+  column: risk_segment
+  derive_from:
+    source_table: customer_payment_scores.csv
+    column: risk_segment
+  classes:
+    - LOW
+    - MEDIUM
+    - HIGH
+  class_encoding: { LOW: 0, MEDIUM: 1, HIGH: 2 }
+
+# ---- Encoding Rules ---------------------------------------------------------
+encoding:
+  ordinal: {}
+  boolean_to_int: []
+
+# ---- Train / Test Split ----------------------------------------------------
+split:
+  test_size: 0.2
+  method: stratified               # stratified by risk_segment
+  stratify_column: risk_segment
+
+# ---- Class Imbalance Handling -----------------------------------------------
+class_imbalance:
+  method: class_weight             # class_weight | smote | none
+  class_weight: balanced           # auto-compute weights inversely proportional to class freq
+
+# ---- Primary Model: LightGBM -----------------------------------------------
+primary_model:
+  type: lightgbm
+  task: classification
+  hyperparameters:
+    n_estimators: 400
+    max_depth: 6
+    learning_rate: 0.05
+    num_leaves: 31
+    min_child_samples: 20
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.1
+    reg_lambda: 0.1
+    objective: multiclass
+    num_class: 3
+    verbose: -1
+
+# ---- Baseline Model: Random Forest -----------------------------------------
+baseline_model:
+  type: random_forest
+  task: classification
+  hyperparameters:
+    n_estimators: 300
+    max_depth: 10
+    min_samples_split: 10
+    min_samples_leaf: 5
+    max_features: sqrt
+    class_weight: balanced
+
+# ---- Hyperparameter Tuning --------------------------------------------------
+tuning:
+  enabled: false
+  method: optuna
+  n_trials: 50
+  timeout: 600
+  metric: f1_macro
+  cv_folds: 5
+  search_space:
+    n_estimators: [100, 800]
+    max_depth: [4, 14]
+    learning_rate: [0.01, 0.2]
+    num_leaves: [15, 63]
+    min_child_samples: [5, 50]
+    subsample: [0.6, 1.0]
+    colsample_bytree: [0.6, 1.0]
+
+# ---- Evaluation Metrics ----------------------------------------------------
+evaluation:
+  metrics:
+    - accuracy
+    - precision_macro
+    - recall_macro
+    - f1_macro
+    - auc_roc_ovr
+  confusion_matrix: true
+  per_class_report: true

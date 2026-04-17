@@ -1,0 +1,91 @@
+# ===========================================================================
+# S7 - Cash Event Normalisation & Aggregation Configuration
+# ===========================================================================
+
+model_info:
+  name: S7_Cash_Aggregation
+  type: rule_based
+  description: "Aggregate all S1-S6 outputs into unified cash position with dedup, confidence, and daily net position"
+
+# ---- Input Sources (forecast_outputs from each module) ----------------------
+input_sources:
+  s1_ar: s1_ar_forecast.csv
+  s2_ap: s2_ap_forecast.csv
+  s3_wip: s3_wip_forecast.csv
+  s4_pipeline: s4_pipeline_forecast.csv
+  s5_contingent: s5_contingent_forecast.csv
+  s6_expense: s6_expense_forecast.csv
+
+# ---- S3 WIP needs column mapping to unified schema -------------------------
+# S3 has different column names — map to forecast_outputs schema
+s3_column_mapping:
+  expected_cash_date: target_date
+  forecast_amount: forecast_amount
+  confidence_tier: confidence_tier
+  source_module: source_module
+  forecast_date: forecast_date
+
+# ---- Opening Balance --------------------------------------------------------
+opening:
+  cash_balance: 5000000.00       # confirmed bank balance at forecast start
+  base_currency: INR
+
+# ---- FX Conversion (Phase 1: single currency, no conversion needed) ---------
+fx:
+  enabled: false
+
+# ---- Source Trust Hierarchy (higher rank = higher trust) --------------------
+# When two sources claim same cash event, higher-trust wins
+source_trust:
+  bank_feed: 1          # rank 1 = highest trust (not used in Phase 1)
+  s1_confirmed: 2
+  s2_confirmed: 3
+  s1_predicted: 4
+  s2_scheduled: 5
+  s3_wip: 6
+  s4_pipeline: 7
+  s6_expense: 8
+  s5_contingent: 9
+
+# ---- Deduplication Rules ----------------------------------------------------
+dedup:
+  enabled: true
+  rules:
+    # When pipeline deal closes and AR invoice exists, suppress S4
+    - source_a: S4
+      source_b: S1
+      winner: S1
+      reason: DEDUP_S4_TO_S1
+    # When WIP milestone invoiced, suppress S3
+    - source_a: S3
+      source_b: S1
+      winner: S1
+      reason: DEDUP_S3_TO_S1
+    # When PO in S6 and S2 both exist, suppress S6
+    - source_a: S6
+      source_b: S2
+      winner: S2
+      reason: DEDUP_S6_TO_S2
+
+# ---- Confidence Tier Assignment (by source) ---------------------------------
+confidence_by_source:
+  S1: MEDIUM         # ML-predicted AR
+  S2: MEDIUM         # ML-predicted AP
+  S3: LOW            # WIP rule-based
+  S4: LOW            # Pipeline rule-based
+  S5: LOW            # Contingent
+  S6: MEDIUM         # Scheduled expenses
+
+# ---- Aggregation Granularity ------------------------------------------------
+aggregation:
+  granularities:
+    - daily
+    - weekly
+    - monthly
+
+# ---- Forecast Settings ------------------------------------------------------
+forecast:
+  reference_date: "2026-04-15"
+  horizon_days: 180
+  source_module: S7
+  forecast_type: CASH

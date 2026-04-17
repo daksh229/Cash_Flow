@@ -1,0 +1,51 @@
+# ===========================================================================
+# S4 - Sales Pipeline Forecast Configuration
+# ===========================================================================
+
+model_info:
+  name: S4_Sales_Pipeline_Forecast
+  type: rule_based
+  description: "Forecast expected cash from open CRM pipeline deals weighted by stage probability"
+
+# ---- Data Sources -----------------------------------------------------------
+data_sources:
+  crm_pipeline: crm_pipeline.csv
+  customer_features: features/customer_features.csv
+  invoices: invoices.csv
+  payments: payments.csv
+
+# ---- Stage Probabilities (Phase 1: static, configured by sales leadership) --
+stage_probabilities:
+  Prospecting: 0.10
+  Qualification: 0.25
+  Proposal: 0.50
+  Negotiation: 0.75
+  Verbal Commit: 0.90
+  Closed Won: 1.00
+
+# ---- Cohort Matching (for milestone extrapolation) --------------------------
+cohort:
+  # Segmentation dimensions for finding comparable closed deals
+  dimensions:
+    - deal_size_band
+    - deal_type
+  min_cohort_size: 10          # minimum closed deals to form a valid cohort
+  fallback_milestone_count: 3  # if cohort too small, assume 3 milestones
+  fallback_billing_weights: [0.30, 0.40, 0.30]   # default billing split
+  fallback_timing_days: [0, 30, 60]               # days from close per milestone
+
+# ---- Invoice Lag (milestone completion -> invoice raised) -------------------
+invoice_lag:
+  default_days: 7              # global average, Phase 1
+
+# ---- Customer Payment Delay -------------------------------------------------
+payment_delay:
+  source: customer_features.avg_payment_delay
+  fallback_days: 30            # if no customer history
+
+# ---- Forecast Horizon -------------------------------------------------------
+forecast:
+  reference_date: "2026-04-15"
+  horizon_days: 180            # pipeline deals look further out
+  source_module: S4
+  forecast_type: PIPELINE

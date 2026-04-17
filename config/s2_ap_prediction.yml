@@ -1,0 +1,134 @@
+# ===========================================================================
+# S2 - AP Payment Prediction Configuration
+# ===========================================================================
+
+# ---- Model Info -------------------------------------------------------------
+model_info:
+  name: S2_AP_Payment_Prediction
+  type: regression
+  target: adjustment_delta
+  description: "Predict payment timing adjustment for vendor bills"
+
+# ---- Feature Tables to Load ------------------------------------------------
+feature_tables:
+  - vendor_features
+  - bill_features
+
+# ---- Feature Columns -------------------------------------------------------
+features:
+  vendor_behaviour:
+    - avg_payment_cycle_days
+    - payment_volatility
+    - discount_capture_ratio
+    - late_payment_ratio
+    - vendor_chase_frequency
+    - avg_invoice_amount
+    - invoice_count
+    - po_to_bill_lag
+    - advance_payment_ratio
+
+  bill_level:
+    - bill_age_days
+    - days_past_due
+    - bill_amount
+    - amount_percentile_vendor
+    - early_payment_eligible
+    - penalty_accruing
+
+  encoded:
+    - bill_amount_bucket_enc
+    - approval_status_enc
+
+# ---- Target Variable -------------------------------------------------------
+target:
+  column: adjustment_delta
+  derive_from:
+    payments_table: payments.csv
+    bills_table: bills.csv
+    reference_type: AP
+    formula: "actual_payment_days - rule_based_scheduled_days"
+  outlier_filter:
+    min_days: -60
+    max_days: 60
+
+# ---- Encoding Rules ---------------------------------------------------------
+encoding:
+  ordinal:
+    bill_amount_bucket:
+      mapping: { SMALL: 0, MEDIUM: 1, LARGE: 2 }
+      output_col: bill_amount_bucket_enc
+    approval_status:
+      mapping: { PENDING: 0, APPROVED: 1 }
+      output_col: approval_status_enc
+  boolean_to_int:
+    - early_payment_eligible
+    - penalty_accruing
+
+# ---- Train / Test Split ----------------------------------------------------
+split:
+  test_size: 0.2
+  method: time_based
+  sort_column: bill_date
+
+# ---- Primary Model: LightGBM -----------------------------------------------
+primary_model:
+  type: lightgbm
+  task: regression
+  hyperparameters:
+    n_estimators: 400
+    max_depth: 6
+    learning_rate: 0.05
+    num_leaves: 31
+    min_child_samples: 20
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.1
+    reg_lambda: 0.1
+    verbose: -1
+
+# ---- Baseline Model: Random Forest -----------------------------------------
+baseline_model:
+  type: random_forest
+  task: regression
+  hyperparameters:
+    n_estimators: 300
+    max_depth: 10
+    min_samples_split: 10
+    min_samples_leaf: 5
+    max_features: sqrt
+
+# ---- Hyperparameter Tuning --------------------------------------------------
+tuning:
+  enabled: false
+  method: optuna
+  n_trials: 50
+  timeout: 600
+  metric: neg_mean_absolute_error
+  cv_folds: 5
+  search_space:
+    n_estimators: [100, 800]
+    max_depth: [4, 14]
+    learning_rate: [0.01, 0.2]
+    num_leaves: [15, 63]
+    min_child_samples: [5, 50]
+    subsample: [0.6, 1.0]
+    colsample_bytree: [0.6, 1.0]
+    reg_alpha: [0.0, 1.0]
+    reg_lambda: [0.0, 1.0]
+
+# ---- Evaluation Metrics ----------------------------------------------------
+evaluation:
+  metrics:
+    - mae
+    - rmse
+    - r2
+    - mape
+    - median_ae
+  error_buckets:
+    - 3
+    - 5
+    - 10
+    - 15
+  overfit_threshold: 1.5
+  divergence_threshold: 8
+  thin_data_threshold: 10         # vendors with < 10 invoices analysed separately

@@ -1,0 +1,161 @@
+# ===========================================================================
+# S1 - AR Collections Prediction Configuration
+# ===========================================================================
+
+# ---- Model Info -------------------------------------------------------------
+model_info:
+  name: S1_AR_Collections_Prediction
+  type: regression                 # regression | classification
+  target: days_to_pay              # column name of target variable
+  description: "Predict expected payment date for every open AR invoice"
+
+# ---- Feature Tables to Load ------------------------------------------------
+feature_tables:
+  - invoice_features
+  - customer_features
+  - collections_features
+  - customer_payment_scores
+
+# ---- Feature Columns -------------------------------------------------------
+# Features used for model training (order preserved)
+features:
+  invoice_level:
+    - invoice_amount
+    - invoice_age_days
+    - days_past_due
+    - amount_percentile_customer
+    - payment_terms_days
+    - dispute_flag
+    - partial_payment_flag
+    - partial_payment_amount
+
+  customer_behaviour:
+    - avg_payment_delay
+    - median_payment_delay
+    - late_payment_ratio
+    - payment_volatility
+    - dispute_ratio
+    - ptp_kept_ratio
+    - recent_reminder_velocity
+    - open_dispute_count
+    - days_since_last_payment
+    - payment_trend_30d
+    - days_sales_outstanding
+    - seasonality_index
+    - avg_invoice_amount
+    - invoice_count
+    - non_invoice_payment_count
+    - advance_payment_ratio
+
+  customer_scores:
+    - payment_score
+    - expected_delay
+
+  collections:
+    - reminder_count
+    - call_count
+    - promise_to_pay_flag
+    - days_since_last_contact
+    - ptp_kept_ratio_customer
+    - days_until_ptp
+
+  encoded:
+    - invoice_amount_bucket_enc
+    - risk_segment_enc
+    - escalation_status_enc
+
+# ---- Target Variable -------------------------------------------------------
+target:
+  column: days_to_pay
+  derive_from:
+    payments_table: payments.csv
+    reference_type: AR
+    formula: "payment_date - invoice_date"
+  outlier_filter:
+    min_days: 0
+    max_days: 365
+
+# ---- Encoding Rules ---------------------------------------------------------
+encoding:
+  ordinal:
+    invoice_amount_bucket:
+      mapping: { SMALL: 0, MEDIUM: 1, LARGE: 2 }
+      output_col: invoice_amount_bucket_enc
+    risk_segment:
+      mapping: { LOW: 0, MEDIUM: 1, HIGH: 2 }
+      output_col: risk_segment_enc
+    escalation_status:
+      mapping: { NONE: 0, REMINDER: 1, FORMAL: 2, LEGAL: 3 }
+      output_col: escalation_status_enc
+  boolean_to_int:
+    - dispute_flag
+    - partial_payment_flag
+    - promise_to_pay_flag
+
+# ---- Train / Test Split (overrides global if set) ---------------------------
+split:
+  test_size: 0.2
+  method: time_based               # time_based | random
+  sort_column: invoice_date
+
+# ---- Primary Model: LightGBM -----------------------------------------------
+primary_model:
+  type: lightgbm
+  task: regression
+  hyperparameters:
+    n_estimators: 500
+    max_depth: 8
+    learning_rate: 0.05
+    num_leaves: 63
+    min_child_samples: 20
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.1
+    reg_lambda: 0.1
+    verbose: -1
+
+# ---- Baseline Model: Random Forest -----------------------------------------
+baseline_model:
+  type: random_forest
+  task: regression
+  hyperparameters:
+    n_estimators: 300
+    max_depth: 12
+    min_samples_split: 10
+    min_samples_leaf: 5
+    max_features: sqrt
+
+# ---- Hyperparameter Tuning --------------------------------------------------
+tuning:
+  enabled: false                   # set true to activate search
+  method: optuna                   # optuna | grid | random
+  n_trials: 50                     # for optuna
+  timeout: 600                     # seconds
+  metric: neg_mean_absolute_error
+  cv_folds: 5
+  search_space:
+    n_estimators: [100, 1000]
+    max_depth: [4, 16]
+    learning_rate: [0.01, 0.2]
+    num_leaves: [15, 127]
+    min_child_samples: [5, 50]
+    subsample: [0.6, 1.0]
+    colsample_bytree: [0.6, 1.0]
+    reg_alpha: [0.0, 1.0]
+    reg_lambda: [0.0, 1.0]
+
+# ---- Evaluation Metrics ----------------------------------------------------
+evaluation:
+  metrics:
+    - mae
+    - rmse
+    - r2
+    - mape
+    - median_ae
+  error_buckets:
+    - 3
+    - 7
+    - 14
+    - 30
+  overfit_threshold: 1.5           # test_mae / train_mae ratio warning
+  divergence_threshold: 10         # days between primary and baseline

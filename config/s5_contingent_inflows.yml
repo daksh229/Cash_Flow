@@ -1,0 +1,24 @@
+# ===========================================================================
+# S5 - Contingent Inflows Configuration
+# ===========================================================================
+
+model_info:
+  name: S5_Contingent_Inflows
+  type: rule_based
+  description: "Schedule expected inflows from loans, tax refunds, grants, insurance, and other non-sales sources"
+
+data_sources:
+  contingent_inflows: contingent_inflows.csv
+
+# ---- Confidence Mapping (approval_status -> confidence_tier) ----------------
+confidence_mapping:
+  COMMITTED: HIGH
+  APPROVED: MEDIUM
+  PENDING: LOW
+  CONTINGENT: LOW
+
+forecast:
+  reference_date: "2026-04-15"
+  horizon_days: 180
+  source_module: S5
+  forecast_type: INFLOW

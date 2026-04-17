@@ -1,0 +1,46 @@
+# ===========================================================================
+# Cash Flow Forecasting Model - Master Configuration
+# ===========================================================================
+
+# ---- Global Settings -------------------------------------------------------
+global:
+  random_seed: 42
+  log_level: INFO                  # DEBUG | INFO | WARNING | ERROR
+  data_dir: Data
+  feature_dir: Data/features
+  model_dir: models
+  report_dir: reports
+  reference_date: "2026-04-15"     # snapshot date for feature computation
+
+# ---- MLflow -----------------------------------------------------------------
+mlflow:
+  enabled: true
+  tracking_uri: mlruns             # relative to project root
+  experiment_prefix: CashFlow      # experiments named: CashFlow_S1, CashFlow_S2, etc.
+
+# ---- Feature Table Generation -----------------------------------------------
+feature_table:
+  run: true                        # set false to skip if features already exist
+
+# ---- Models to Run ----------------------------------------------------------
+# List the model keys to execute. Order is respected.
+# Available: s1_ar_prediction, s2_ap_prediction, credit_risk
+models:
+  - s1_ar_prediction
+  - s2_ap_prediction
+  - credit_risk
+  - s3_wip_forecast
+  - s4_pipeline_forecast
+  - s5_contingent_inflows
+  - s6_expense_forecast
+  - s7_cash_aggregation
+  - recommendation_engine
+
+# ---- Common Training Settings (can be overridden per model) -----------------
+training:
+  test_size: 0.2
+  split_method: time_based         # time_based | random | stratified
+  cross_validation:
+    enabled: true
+    folds: 5
+    scoring: neg_mean_absolute_error

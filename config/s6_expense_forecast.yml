@@ -1,0 +1,26 @@
+# ===========================================================================
+# S6 - Expense Forecast Configuration
+# ===========================================================================
+
+model_info:
+  name: S6_Expense_Forecast
+  type: rule_based
+  description: "Schedule all planned cash outflows: salaries, taxes, renewals, PO-based, seasonal, one-time"
+
+data_sources:
+  expense_schedule: expense_schedule.csv
+
+# ---- Confidence by category -------------------------------------------------
+confidence_mapping:
+  Salary: HIGH           # fixed recurring, known amount
+  Statutory Tax: HIGH    # known date, estimated amount
+  Renewal: MEDIUM        # known date, amount may vary
+  PO-based: MEDIUM       # committed but timing may shift
+  Seasonal: LOW          # planned but adjustable
+  One-time: LOW          # ad-hoc, subject to change
+
+forecast:
+  reference_date: "2026-04-15"
+  horizon_days: 180
+  source_module: S6
+  forecast_type: EXPENSE

@@ -1,0 +1,53 @@
+# ===========================================================================
+# S3 - WIP / Project Billing Forecast Configuration
+# ===========================================================================
+
+# ---- Model Info -------------------------------------------------------------
+model_info:
+  name: S3_WIP_Billing_Forecast
+  type: rule_based
+  description: "Forecast expected invoice dates and cash inflows from milestone-based projects"
+
+# ---- Data Sources -----------------------------------------------------------
+data_sources:
+  project_milestones: project_milestones.csv
+  customer_features: features/customer_features.csv
+
+# ---- Forecast Rules ---------------------------------------------------------
+rules:
+  # Include milestones where completion >= threshold OR days_to_completion <= lookforward
+  completion_threshold: 0.80          # 80% complete = include in forecast
+  lookforward_window_days: 30         # milestones completing within 30 days
+  include_statuses:                   # project statuses to include
+    - ACTIVE
+
+  # Invoice lag: days from milestone completion to invoice issuance (Phase 1: global avg)
+  default_invoice_lag_days: 7
+
+  # Customer payment delay: sourced from customer_features.avg_payment_delay
+  # If customer has no history, use this fallback
+  fallback_payment_delay_days: 30
+
+# ---- Forecast Horizon -------------------------------------------------------
+forecast:
+  reference_date: "2026-04-15"
+  horizon_days: 90                    # forecast 90 days ahead
+  source_module: S3
+  forecast_type: WIP
+
+# ---- Output Schema ----------------------------------------------------------
+output:
+  columns:
+    - forecast_id
+    - project_id
+    - milestone_id
+    - customer_id
+    - milestone_name
+    - billing_amount
+    - expected_completion_date
+    - expected_invoice_date
+    - expected_cash_date
+    - forecast_amount
+    - confidence_tier
+    - source_module
+    - forecast_date

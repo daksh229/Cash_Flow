@@ -1,0 +1,58 @@
+# ===========================================================================
+# Recommendation Engine Configuration
+# ===========================================================================
+
+model_info:
+  name: Recommendation_Engine
+  type: rule_based
+  description: "Generate ranked, actionable, explainable recommendations for treasury"
+
+# ---- Data Sources -----------------------------------------------------------
+data_sources:
+  s7_daily_position: forecast_outputs/s7_daily_position.csv
+  s1_payment_predictions: forecast_outputs/s1_payment_predictions.csv
+  s2_payment_predictions: forecast_outputs/s2_payment_predictions.csv
+  customer_payment_scores: features/customer_payment_scores.csv
+  collections_features: features/collections_features.csv
+  invoice_features: features/invoice_features.csv
+  invoices: invoices.csv
+
+# ---- Scoring Weights --------------------------------------------------------
+scoring_weights:
+  cash_improvement: 0.40
+  risk_reduction: 0.30
+  target_alignment: 0.20
+  feasibility: 0.10
+
+# ---- Levers -----------------------------------------------------------------
+levers:
+  collections:
+    enabled: true
+    overdue_threshold_days: 0          # include all overdue invoices
+    escalation_acceleration_days: 5    # avg days gained per escalation
+    max_recommendations: 10
+
+  vendor_deferral:
+    enabled: true
+    eligible_tiers: [3, 4, 5]          # only defer lower-priority vendors
+    max_deferral_days: 10
+    max_recommendations: 5
+
+  expense_deferral:
+    enabled: true
+    eligible_categories: ["Seasonal", "One-time"]
+    max_deferral_days: 21
+    max_recommendations: 3
+
+# ---- Policy Constraints -----------------------------------------------------
+constraints:
+  min_cash_balance: 1000000.0          # never recommend below this floor
+  tier1_vendor_deferral: false         # never defer Tier 1 vendors
+
+# ---- Output -----------------------------------------------------------------
+output:
+  top_n: 10                            # surface top N recommendations per cycle
+
+forecast:
+  reference_date: "2026-04-15"
+  source_module: RE
