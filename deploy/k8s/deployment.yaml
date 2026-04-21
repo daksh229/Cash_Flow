@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cashflow-api
+  labels:
+    app: cashflow
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cashflow
+      component: api
+  template:
+    metadata:
+      labels:
+        app: cashflow
+        component: api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api
+          image: cashflow/api:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: CASHFLOW_DB_URL
+              valueFrom:
+                secretKeyRef: { name: cashflow-db, key: url }
+            - name: AUTH_SIGNING_KEY
+              valueFrom:
+                secretKeyRef: { name: cashflow-auth, key: signing_key }
+          resources:
+            requests: { cpu: "200m", memory: "512Mi" }
+            limits:   { cpu: "1000m", memory: "2Gi" }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cashflow-api
+spec:
+  selector:
+    app: cashflow
+    component: api
+  ports:
+    - port: 80
+      targetPort: 8000

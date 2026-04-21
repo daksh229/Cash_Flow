@@ -1,0 +1,14 @@
+.git
+.gitignore
+venv
+__pycache__
+*.pyc
+.pytest_cache
+mlruns
+Data
+models
+reports
+sample_data.zip
+*.docx
+tests
+deploy/secrets

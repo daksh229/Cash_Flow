@@ -10,3 +10,7 @@ fastapi
 uvicorn
 streamlit
 requests
+sqlalchemy>=2.0
+pytest
+prometheus-client
+python-dotenv

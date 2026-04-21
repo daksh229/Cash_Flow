@@ -49,6 +49,7 @@ def _load_model_config(model_key):
 
 def _run_feature_table(global_cfg):
     """Run common feature table generation."""
+    import pandas as pd
     from steps.feature_table import run as feature_table_run
 
     # Pass reference date from config

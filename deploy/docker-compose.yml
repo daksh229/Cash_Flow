@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cashflow
+      POSTGRES_USER: cashflow
+      POSTGRES_PASSWORD_FILE: /run/secrets/DB_PASSWORD
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    secrets:
+      - DB_PASSWORD
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cashflow -d cashflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CASHFLOW_DB_URL: postgresql+psycopg://cashflow:$${DB_PASSWORD}@db:5432/cashflow
+    secrets:
+      - AUTH_SIGNING_KEY
+      - DB_PASSWORD
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    depends_on:
+      - api
+    command: ["streamlit", "run", "app/frontend.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+
+volumes:
+  pgdata:
+
+secrets:
+  AUTH_SIGNING_KEY:
+    file: ./secrets/auth_signing_key.txt
+  DB_PASSWORD:
+    file: ./secrets/db_password.txt

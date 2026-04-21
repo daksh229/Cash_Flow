@@ -257,6 +257,18 @@ def run(preprocessed_data, config=None, master_cfg=None):
             if mlflow_enabled:
                 mlflow.log_metric("mean_model_divergence", float(divergence.mean()))
 
+        # Thin-data split: evaluate customers with < thin_data_threshold invoices
+        # separately so we can see whether LightGBM is actually winning on the
+        # sparse bucket or only on the rich one.
+        from steps.shared.thin_data import split_metrics, log_to_mlflow
+        thin_threshold = config.get("evaluation", {}).get("thin_data_threshold", 10)
+        thin_metrics = split_metrics(
+            X_test, y_test, lgbm_pred_test,
+            threshold=thin_threshold, count_col="invoice_count", label="thin",
+        )
+        if mlflow_enabled and thin_metrics:
+            log_to_mlflow(thin_metrics, mlflow_mod=mlflow)
+
         if mlflow_enabled:
             logger.info("  MLflow run ID: %s", ml_run.info.run_id)
 

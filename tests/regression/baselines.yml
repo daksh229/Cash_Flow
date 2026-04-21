@@ -1,0 +1,23 @@
+# Regression baselines - last-known-good metrics per model.
+# Updated deliberately by a human when a genuine improvement is committed.
+# CI fails if a new run's metric is worse than (baseline + tolerance).
+
+s1_ar_prediction:
+  test_mae:       { value: 6.5,  tolerance: 1.0, direction: lower_is_better }
+  test_r2:        { value: 0.72, tolerance: 0.05, direction: higher_is_better }
+
+s2_ap_prediction:
+  test_mae:       { value: 2.1,  tolerance: 0.5, direction: lower_is_better }
+
+credit_risk:
+  test_f1:        { value: 0.80, tolerance: 0.03, direction: higher_is_better }
+  test_accuracy:  { value: 0.83, tolerance: 0.03, direction: higher_is_better }
+
+s7_cash_aggregation:
+  dedup_rate:     { value: 0.98, tolerance: 0.02, direction: higher_is_better }
+
+# Primary client KPI: cash accuracy weighted 70%, days 30%
+cash_kpi:
+  kpi:            { value: 75.0, tolerance: 5.0,  direction: higher_is_better }
+  cash_accuracy:  { value: 80.0, tolerance: 5.0,  direction: higher_is_better }
+  match_rate:     { value: 0.90, tolerance: 0.05, direction: higher_is_better }

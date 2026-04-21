@@ -159,3 +159,17 @@ evaluation:
     - 30
   overfit_threshold: 1.5           # test_mae / train_mae ratio warning
   divergence_threshold: 10         # days between primary and baseline
+  thin_data_threshold: 10          # customers with < N invoices routed to prior/RF
+
+# ---- Cold-Start Prior ------------------------------------------------------
+cold_start:
+  enabled: true
+  tau: 5.0                         # shrinkage strength
+  min_customer_n: 3                # below this, weight goes to segment/global
+
+# ---- Model Selector (auto-rollback) ----------------------------------------
+# At serve time, pick LightGBM vs RF vs Prior based on recent metrics and
+# per-customer sample size.
+model_selector:
+  degradation_threshold_pct: 20    # if LGB test_mae worsens by > X%, fall back
+  comparison_window: 3             # last N evaluations

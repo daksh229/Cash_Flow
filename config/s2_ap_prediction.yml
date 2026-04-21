@@ -132,3 +132,14 @@ evaluation:
   overfit_threshold: 1.5
   divergence_threshold: 8
   thin_data_threshold: 10         # vendors with < 10 invoices analysed separately
+
+# ---- Cold-Start Prior ------------------------------------------------------
+cold_start:
+  enabled: true
+  tau: 5.0
+  min_customer_n: 3
+
+# ---- Model Selector (auto-rollback) ----------------------------------------
+model_selector:
+  degradation_threshold_pct: 20
+  comparison_window: 3

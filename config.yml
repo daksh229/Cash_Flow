@@ -12,6 +12,40 @@ global:
   report_dir: reports
   reference_date: "2026-04-15"     # snapshot date for feature computation
 
+# ---- Tenancy (multi-entity support) ----------------------------------------
+# Every DB row is scoped by tenant_id. At runtime the active tenant is set via
+# the `X-Tenant-Id` header (API) or CASHFLOW_TENANT_ID env var (batch jobs).
+tenancy:
+  default_tenant: default
+  tenants:
+    - default
+    # - entity_alpha
+    # - entity_beta
+    # - entity_gamma
+
+# ---- Success KPI (cash weighted higher than days) --------------------------
+kpi:
+  cash_weight: 0.7                 # Nikunj: cash accuracy > days accuracy
+  days_weight: 0.3
+  mae_days_target: 10              # mae_days this value or better -> full points
+
+# ---- Volume-Triggered Retraining -------------------------------------------
+retraining:
+  s1_ar_prediction:
+    new_rows_threshold: 100        # fire retrain when this many new invoices land
+  s2_ap_prediction:
+    new_rows_threshold: 100
+  credit_risk:
+    new_rows_threshold: 200
+
+# ---- Database (persisted data layer) ---------------------------------------
+database:
+  backend: sqlite                  # sqlite | postgres
+  path: Data/cashflow.db           # used when backend=sqlite
+  # url: postgresql+psycopg://user:pass@host:5432/cashflow   # overrides path
+  echo: false
+  pool_size: 5
+
 # ---- MLflow -----------------------------------------------------------------
 mlflow:
   enabled: true
