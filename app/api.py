@@ -834,33 +834,71 @@ def _predict_cr(features_df, raw_info, mode):
 
 
 # ---------------------------------------------------------------------------
-# S3/S4 Forecast data loading
+# S3-S7 + RE Forecast data loading (lazy — reloads from disk each access)
 # ---------------------------------------------------------------------------
-FORECAST_DATA = {}
+FORECAST_FILES = {
+    "s3_wip": "s3_wip_forecast.csv",
+    "s4_pipeline": "s4_pipeline_detail.csv",
+    "s5_contingent": "s5_contingent_detail.csv",
+    "s6_expense": "s6_expense_detail.csv",
+    "s7_daily": "s7_daily_position.csv",
+    "s7_weekly": "s7_weekly_position.csv",
+    "s7_monthly": "s7_monthly_position.csv",
+    "s7_events": "s7_event_store.csv",
+    "recommendations": "recommendations.csv",
+}
+FORECAST_DIR = BASE_DIR / "Data" / "forecast_outputs"
+
+
+def _get_forecast(key: str) -> pd.DataFrame | None:
+    """Load a forecast CSV from disk. Returns None if file missing."""
+    fname = FORECAST_FILES.get(key)
+    if not fname:
+        return None
+    path = FORECAST_DIR / fname
+    if not path.exists():
+        return None
+    return pd.read_csv(path)
+
+
+class _ForecastStore(dict):
+    """Dict that auto-loads from disk if key is missing but file exists."""
+
+    def get(self, key, default=None):
+        val = super().get(key)
+        if val is None:
+            val = _get_forecast(key)
+            if val is not None:
+                self[key] = val
+        return val if val is not None else default
+
+
+FORECAST_DATA = _ForecastStore()
 
 
 def _load_forecast_data():
-    """Load pre-computed forecast CSVs for S3-S7."""
-    forecast_dir = BASE_DIR / "Data" / "forecast_outputs"
-    files = {
-        "s3_wip": "s3_wip_forecast.csv",
-        "s4_pipeline": "s4_pipeline_detail.csv",
-        "s5_contingent": "s5_contingent_detail.csv",
-        "s6_expense": "s6_expense_detail.csv",
-        "s7_daily": "s7_daily_position.csv",
-        "s7_weekly": "s7_weekly_position.csv",
-        "s7_monthly": "s7_monthly_position.csv",
-        "s7_events": "s7_event_store.csv",
-        "recommendations": "recommendations.csv",
-    }
-    for key, fname in files.items():
-        path = forecast_dir / fname
+    """Pre-load all forecast data (called at startup + on reload)."""
+    FORECAST_DATA.clear()
+    for key, fname in FORECAST_FILES.items():
+        path = FORECAST_DIR / fname
         if path.exists():
             FORECAST_DATA[key] = pd.read_csv(path)
             logger.info("Loaded forecast data: %s (%d rows)", key, len(FORECAST_DATA[key]))
 
 
 _load_forecast_data()
+
+
+@app.post("/reload")
+def reload_data():
+    """Reload all forecast data and feature tables from disk."""
+    _load_feature_tables()
+    _load_forecast_data()
+    return {
+        "status": "reloaded",
+        "feature_tables": list(FEATURE_TABLES.keys()),
+        "forecast_data": list(FORECAST_DATA.keys()),
+    }
 
 
 # ---------------------------------------------------------------------------
