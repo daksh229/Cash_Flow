@@ -18,6 +18,15 @@ venv/
 env/
 
 # ===========================================================================
+# Node.js (doc tooling / mermaid - not part of the Python app)
+# ===========================================================================
+node_modules/
+package.json
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+
+# ===========================================================================
 # MLflow
 # ===========================================================================
 mlruns/
@@ -57,7 +66,8 @@ Thumbs.db
 # ===========================================================================
 # Documentation (confidential / internal)
 # ===========================================================================
-CashFlow_SDD_v17-20032026.docx
+*.docx
+sdd_text.txt
 Model_InputOutput_Mapping.csv
 Model_InputOutput_Mapping.md
 
